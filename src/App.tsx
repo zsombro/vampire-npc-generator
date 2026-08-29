@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import './App.css'
-import { generateComplex, generateSimple, generateSinglePool } from './service/generator.service'
-import { SinglePool, SecondaryPlayerCharacter } from './model/SPC'
+import { generateSimple, generateSinglePool } from './service/generator.service'
+import { Simple, SinglePool, SecondaryPlayerCharacter } from './model/SPC'
 import Character from './components/Character'
-import { chanceOfSuccessAgainstDifficulty } from './service/roll.service'
+import { chanceOfSuccessAgainstDifficulty, chanceOfWinningContest } from './service/roll.service'
 import styles from './App.module.scss'
 
 function App() {
@@ -58,7 +58,6 @@ function App() {
         <select onChange={(e) => setCharacterType(e.target.value)} value={characterType}>
           <option value="single_pool">Single Pool</option>
           <option value="simple">Simple</option>
-          <option value="complex">Complex</option>
         </select>
       </>
     )
@@ -67,18 +66,37 @@ function App() {
   function generateCharacter(): SecondaryPlayerCharacter {
     switch (characterType) {
       case "simple":
-        return generateSimple()
-      case "complex":
-        return generateComplex()
+        return generateSimple(threatLevel)
       default:
-        return generateSinglePool()
+        return generateSinglePool(threatLevel)
     }
+  }
+
+  function selectedDicePool(character: Simple): number {
+    switch (attributeGroup) {
+      case 2:
+        return character.mental
+      case 3:
+        return character.social
+      default:
+        return character.physical
+    }
+  }
+
+  function chanceSummary(character: SecondaryPlayerCharacter): string {
+    if (character.type === "single_pool") {
+      const chance = chanceOfSuccessAgainstDifficulty(dicePool, hunger, (character as SinglePool).expertDifficulty)
+      return `The player has a ${Math.round(chance * 100)}% chance of meeting the expert difficulty.`
+    }
+
+    const opponentPool = selectedDicePool(character as Simple)
+    const chance = chanceOfWinningContest(dicePool, hunger, opponentPool)
+    return `The player has a ${Math.round(chance * 100)}% chance of winning this contest.`
   }
   
   return (
     <main className={styles.app}>
       <header className={styles.masthead}>
-        <p className={styles.eyebrow}>Storyteller's ledger</p>
         <h1>Kindred <span>Generator</span></h1>
       </header>
       <section className={styles.settings} aria-label="Character generation settings">
@@ -90,9 +108,7 @@ function App() {
       <div className={styles.characterList}>
         {characters.map((character) => (
           <div key={character.name}>
-          {character.type === "single_pool" && (
-            <p className={styles.chance}>The player has a {Math.round(chanceOfSuccessAgainstDifficulty(dicePool, hunger, (character as SinglePool).expertDifficulty) * 100)}% chance of meeting the expert difficulty.</p>
-          )}
+          <p className={styles.chance}>{chanceSummary(character)}</p>
           <Character 
             character={character}
             onClose={() => setCharacters(characters.filter((c) => c !== character))}

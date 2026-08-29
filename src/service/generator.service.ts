@@ -1,54 +1,75 @@
-import { Complex, Simple, SinglePool } from "../model/SPC"
+import { Simple, SinglePool } from "../model/SPC"
 
-export function generateSinglePool(): SinglePool {
+interface StatRange {
+    minimum: number;
+    maximum: number;
+}
+
+interface ThreatProfile {
+    health: StatRange;
+    willpower: StatRange;
+    generalDifficulty: StatRange;
+    expertDifficulty: StatRange;
+    simplePool: StatRange;
+}
+
+const threatProfiles: Record<number, ThreatProfile> = {
+    1: {
+        health: { minimum: 4, maximum: 5 },
+        willpower: { minimum: 2, maximum: 4 },
+        generalDifficulty: { minimum: 1, maximum: 2 },
+        expertDifficulty: { minimum: 2, maximum: 3 },
+        simplePool: { minimum: 2, maximum: 4 },
+    },
+    2: {
+        health: { minimum: 5, maximum: 6 },
+        willpower: { minimum: 4, maximum: 6 },
+        generalDifficulty: { minimum: 2, maximum: 3 },
+        expertDifficulty: { minimum: 3, maximum: 4 },
+        simplePool: { minimum: 4, maximum: 6 },
+    },
+    3: {
+        health: { minimum: 6, maximum: 8 },
+        willpower: { minimum: 6, maximum: 10 },
+        generalDifficulty: { minimum: 3, maximum: 4 },
+        expertDifficulty: { minimum: 4, maximum: 5 },
+        simplePool: { minimum: 6, maximum: 8 },
+    },
+}
+
+export function generateSinglePool(threatLevel: number): SinglePool {
+    const profile = threatProfileFor(threatLevel)
+
     return {
         type: "single_pool",
         name: generateName(),
-        health: randomInteger(4, 8),
-        willpower: randomInteger(2, 10),
-        generalDifficulty: Math.floor(Math.random() * 4) + 1,
-        expertDifficulty: Math.floor(Math.random() * 4) + 1,
+        health: randomFromRange(profile.health),
+        willpower: randomFromRange(profile.willpower),
+        generalDifficulty: randomFromRange(profile.generalDifficulty),
+        expertDifficulty: randomFromRange(profile.expertDifficulty),
     }
 }
 
-export function generateSimple(): Simple {
+export function generateSimple(threatLevel: number): Simple {
+    const profile = threatProfileFor(threatLevel)
+
     return {
         type: "simple",
         name: generateName(),
-        health: randomInteger(4, 8),
-        willpower: randomInteger(2, 10),
-        physical: randomInteger(2, 10),
-        mental: randomInteger(2, 10),
-        social: randomInteger(2, 10),
+        health: randomFromRange(profile.health),
+        willpower: randomFromRange(profile.willpower),
+        physical: randomFromRange(profile.simplePool),
+        mental: randomFromRange(profile.simplePool),
+        social: randomFromRange(profile.simplePool),
     }
 }
 
-export function generateComplex(): Complex {
-    const physical = {
-        strength: randomInteger(1, 5),
-        dexterity: randomInteger(1, 5),
-        stamina: randomInteger(1, 5),
-    }
-    const mental = {
-        intelligence: randomInteger(1, 5),
-        wits: randomInteger(1, 5),
-        resolve: randomInteger(1, 5),
-    }
-    const social = {
-        charisma: randomInteger(1, 5),
-        manipulation: randomInteger(1, 5),
-        composure: randomInteger(1, 5),
-    }
+function threatProfileFor(threatLevel: number): ThreatProfile {
+    return threatProfiles[threatLevel] ?? threatProfiles[2]
+}
 
-    return {
-        type: "complex",
-        name: generateName(),
-        health: physical.stamina + 3,
-        willpower: social.composure + mental.resolve,
-        physical,
-        mental,
-        social,
-    }
+function randomFromRange(range: StatRange): number {
+    return randomInteger(range.minimum, range.maximum)
 }
 
 function randomInteger(minimum: number, maximum: number): number {

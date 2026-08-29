@@ -48,6 +48,27 @@ export function playerWinsContest(player: V5Roll, opponent: V5Roll): boolean {
     return player.successes >= opponent.successes;
 }
 
+export function chanceOfWinningContest(
+    playerDicePoolSize: number,
+    playerHunger: number,
+    opponentDicePoolSize: number,
+    opponentHunger = 0,
+    simulations = simulationCount,
+): number {
+    let playerWins = 0;
+
+    for (let simulation = 0; simulation < simulations; simulation++) {
+        if (playerWinsContest(
+            rollV5(playerDicePoolSize, playerHunger),
+            rollV5(opponentDicePoolSize, opponentHunger),
+        )) {
+            playerWins++;
+        }
+    }
+
+    return playerWins / simulations;
+}
+
 export function chanceOfSuccessAgainstDifficulty(
     dicePoolSize: number,
     hunger: number,
