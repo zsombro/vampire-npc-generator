@@ -1,33 +1,67 @@
-// A success means rolling n > 5 on a d10
-const successProbability = 0.5;
-
-export function roll(dicePoolSize: number, difficulty: number): boolean {
-    return Array.from({ length: dicePoolSize }, () => Math.random())
-        .filter(rollResult => rollResult > successProbability)
-        .length >= difficulty
+export interface V5Roll {
+    successes: number;
+    messyCritical: boolean;
+    bestialFailure: boolean;
 }
 
-function binomialCoefficient(n: number, k: number): number {
-    if (k > n || n < 0 || k < 0) {
-        return 0
-    }
-    if (k === 0 || n === k) {
-        return 1
-    }
-    return binomialCoefficient(n - 1, k - 1) + binomialCoefficient(n - 1, k)
+const simulationCount = 10_000;
+
+function rollDie(): number {
+    return Math.floor(Math.random() * 10) + 1;
 }
 
-export function chanceAgainstDifficulty(dicePoolSize: number, difficulty: number): number {
+export function rollV5(dicePoolSize: number, hunger: number): V5Roll {
+    const poolSize = Math.max(0, Math.floor(dicePoolSize));
+    const hungerDice = Math.min(poolSize, Math.max(0, Math.floor(hunger)));
+    let successes = 0;
+    let tens = 0;
+    let hungerTen = false;
+    let hungerOne = false;
 
-    return binomialCoefficient(dicePoolSize, difficulty) *
-        Math.pow(successProbability, difficulty) *
-        Math.pow(1 - successProbability, dicePoolSize - difficulty)
+    for (let index = 0; index < poolSize; index++) {
+        const isHungerDie = index < hungerDice;
+        const result = rollDie();
+
+        if (result >= 6) {
+            successes++;
+        }
+        if (result === 10) {
+            tens++;
+            hungerTen ||= isHungerDie;
+        }
+        if (result === 1 && isHungerDie) {
+            hungerOne = true;
+        }
+    }
+
+    const criticalPairs = Math.floor(tens / 2);
+    successes += criticalPairs * 2;
+
+    return {
+        successes,
+        messyCritical: criticalPairs > 0 && hungerTen,
+        bestialFailure: successes === 0 && hungerOne,
+    };
 }
 
-export function changeOfWinningContest(dicePoolSize: number, difficulty: number): number {
-    let probability = 0;
-    for (let i = difficulty; i <= dicePoolSize; i++) {
-        probability += chanceAgainstDifficulty(dicePoolSize, i);
+export function playerWinsContest(player: V5Roll, opponent: V5Roll): boolean {
+    return player.successes >= opponent.successes;
+}
+
+export function chanceOfSuccessAgainstDifficulty(
+    dicePoolSize: number,
+    hunger: number,
+    difficulty: number,
+    simulations = simulationCount,
+): number {
+    const opponent = { successes: Math.max(0, Math.floor(difficulty)), messyCritical: false, bestialFailure: false };
+    let playerWins = 0;
+
+    for (let simulation = 0; simulation < simulations; simulation++) {
+        if (playerWinsContest(rollV5(dicePoolSize, hunger), opponent)) {
+            playerWins++;
+        }
     }
-    return probability;
+
+    return playerWins / simulations;
 }

@@ -1,24 +1,24 @@
-export interface SPC {
+export interface SecondaryPlayerCharacter {
     type: "single_pool" | "simple" | "complex";
     name: string;
     health: number;
     willpower: number;
 }
 
-export interface SinglePool extends SPC {
+export interface SinglePool extends SecondaryPlayerCharacter {
     type: "single_pool";
     generalDifficulty: number;
     expertDifficulty: number;
 }
 
-export interface Simple extends SPC {
+export interface Simple extends SecondaryPlayerCharacter {
     type: "simple";
     physical: number;
     mental: number;
     social: number;
 }
 
-export interface Complex extends SPC {
+export interface Complex extends SecondaryPlayerCharacter {
     type: "complex";
     physical: {
         strength: number;
